@@ -5,10 +5,9 @@
       name="viewport"
       content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
-    <title>Hello, AR Cube!</title>
+    <title>Hello, world!</title>
     <!-- include three.js library -->
     <script src="js/three.js"></script>
-    <script src="webxr/ARButton.js"></script>
     <!-- include jsartookit -->
     <script src="jsartoolkit5/artoolkit.min.js"></script>
     <script src="jsartoolkit5/artoolkit.api.js"></script>
@@ -17,8 +16,6 @@
     <script src="threex/threex-artoolkitcontext.js"></script>
     <script src="threex/threex-arbasecontrols.js"></script>
     <script src="threex/threex-armarkercontrols.js"></script>
-    <script src="https://threejs.org/build/three.min.js"></script>
-    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
   </head>
 
   <body style="margin : 0px; overflow: hidden; font-family: Monospace;">
@@ -28,20 +25,13 @@
 -->
 
     <script>
-      var w = innerWidth,
-        h = innerHeight;
-      var scene, camera, renderer, raycaster, clock, deltaTime, totalTime;
+      var scene, camera, renderer, clock, deltaTime, totalTime;
 
       var arToolkitSource, arToolkitContext;
 
       var markerRoot1;
 
       var mesh1;
-      var controller;
-
-      var mouse = new THREE.Vector2();
-      var radius = 100,
-        theta = 0;
 
       initialize();
       animate();
@@ -52,7 +42,7 @@
         let ambientLight = new THREE.AmbientLight(0xcccccc, 0.5);
         scene.add(ambientLight);
 
-        camera = new THREE.PerspectiveCamera(60, w / h, 1, 1000);;
+        camera = new THREE.Camera();
         scene.add(camera);
 
         renderer = new THREE.WebGLRenderer({
@@ -64,14 +54,11 @@
         renderer.domElement.style.position = "absolute";
         renderer.domElement.style.top = "0px";
         renderer.domElement.style.left = "0px";
-        renderer.xr.enabled = true;
         document.body.appendChild(renderer.domElement);
 
         clock = new THREE.Clock();
         deltaTime = 0;
-        totalTime = 0;
-
-        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+        totalTime = 5;
 
         ////////////////////////////////////////////////////////////
         // setup arToolkitSource
@@ -129,60 +116,34 @@
           }
         );
 
-        let boxGeom = new THREE.CubeGeometry(0.3, 0.3, 0.3);
-        let boxMat = new THREE.MeshNormalMaterial({
-          transparent: true,
-          opacity: 1,
-          side: THREE.DoubleSide
+        let geometry1 = new THREE.SphereGeometry(1, 32, 32);
+
+        let loader = new THREE.TextureLoader();
+        let texture = loader.load("https://cdn.glitch.com/e6bb84f0-df49-4c55-b9aa-6ed1e65a50b2%2Fearth-sphere.jpg", render);
+        let material1 = new THREE.MeshLambertMaterial({
+          map: texture,
+          opacity: 0.5
         });
 
-        var box = new THREE.Mesh(boxGeom, boxMat);
-        var box1 = new THREE.Mesh(boxGeom, boxMat);
-        var box2 = new THREE.Mesh(boxGeom, boxMat);
+        mesh1 = new THREE.Mesh(geometry1, material1);
+        mesh1.position.y = 1;
 
-        box.position.y = 0.5;
-        box.position.z = 0.2;
+        markerRoot1.add(mesh1);
 
-        box1.position.x = 0.5;
-        box1.position.y = 0.5;
-        box1.position.z = 0.2;
-
-        box2.position.x = -0.5;
-        box2.position.y = 0.5;
-        box2.position.z = 0.2;
-
-        markerRoot1.add(box);
-        markerRoot1.add(box1);
-        markerRoot1.add(box2);
-
-        raycaster = new THREE.Raycaster();
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-
-        renderer.domElement.addEventListener("click", onClick);
-
-        function onClick(event) {
-          mouse.x = (event.clientX / w) * 2 - 1;
-          mouse.y = -(event.clientY / h) * 2 + 1;
-
-          raycaster.setFromCamera(mouse, camera);
-
-          let intersectbox = raycaster.intersectObject(box);
-          let intersectbox1 = raycaster.intersectObject(box1);
-          let intersectbox2 = raycaster.intersectObject(box2);
-
-          if (intersectbox.length >= 1) {
-            window.location =
-              "https://threejs.org/docs/index.html#api/en/renderers/webxr/WebXRManager";
-          } else if (intersectbox1.length >= 1) {
-            alert("2");
-          } else if (intersectbox2.length >= 1) {
-            alert("3");
-          }
-        }
+        let pointLight = new THREE.PointLight(0xffffff, 1, 100);
+        pointLight.position.set(0.5, 3, 2);
+        // create a mesh to help visualize the position of the light
+        pointLight.add(
+          new THREE.Mesh(
+            new THREE.SphereBufferGeometry(0.05, 16, 8),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5 })
+          )
+        );
+        markerRoot1.add(pointLight);
       }
 
       function update() {
+        if (markerRoot1.visible) mesh1.rotation.y += 0.01;
         // update artoolkit on every frame
         if (arToolkitSource.ready !== false)
           arToolkitContext.update(arToolkitSource.domElement);
